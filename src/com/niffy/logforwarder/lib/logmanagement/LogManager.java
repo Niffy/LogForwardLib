@@ -43,8 +43,8 @@ public class LogManager<M extends IMessage> implements ILogManager {
 		this.mSelector = pSelector;
 		this.mVersion = pVersion;
 	}
-	
-	public LogManager(final int pVersion){
+
+	public LogManager(final int pVersion) {
 		this.mVersion = pVersion;
 	}
 
@@ -61,12 +61,15 @@ public class LogManager<M extends IMessage> implements ILogManager {
 
 	}
 
+	@Override
+	public void setSelector(final ISelector pSelector) {
+		this.mSelector = pSelector;
+	}
+
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
-	public void setSelector(final ISelector pSelector){
-		this.mSelector = pSelector;
-	}
+
 	// ===========================================================
 	// Methods
 	// ===========================================================
