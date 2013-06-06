@@ -333,6 +333,12 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 	// ===========================================================
 	protected SocketChannel initiateConnection(final InetSocketAddress pAddress) throws IOException {
 		log.debug("InitiateConnection: {}", pAddress);
+		synchronized (this.mChannelMap) {
+			if(this.mChannelMap.containsKey(pAddress.getAddress())){
+				log.warn("Went to connect to: {} but already in the channel map.", pAddress);
+				return null;
+			}
+		}
 		SocketChannel socketChannel = SocketChannel.open();
 		socketChannel.configureBlocking(false);
 
