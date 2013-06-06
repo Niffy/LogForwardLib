@@ -84,6 +84,7 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 		this.mBufferCapacity = pBufferCapacity;
 		ByteBuffer.allocate(this.mBufferCapacity);
 		this.mSelector = this.initSelector();
+		this.mLogManager = pLogManager;
 	}
 
 	@Override
