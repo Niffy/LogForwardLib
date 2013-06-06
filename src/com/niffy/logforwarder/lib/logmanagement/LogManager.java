@@ -5,7 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 	protected ISelector mSelector;
 	protected AtomicInteger mSequence = new AtomicInteger();
 	protected int mVersion = 0;
+	protected HashMap<InetSocketAddress, ArrayList<IMessage>> mQueue = new HashMap<InetSocketAddress, ArrayList<IMessage>>();
 
 	// ===========================================================
 	// Constructors
@@ -52,18 +55,32 @@ public class LogManager<M extends IMessage> implements ILogManager {
 	// Methods for/from SuperClass/Interfaces
 	// ===========================================================
 	@Override
-	public void handle(InetAddress pAddress, byte[] pData) {
+	public void handle(InetSocketAddress pAddress, byte[] pData) {
 
 	}
 
 	@Override
-	public void addRequest(LogRequest<IMessage> pRequest) {
-
+	public boolean addRequest(LogRequest<IMessage> pRequest) {
+		return false;
 	}
 
 	@Override
 	public void setSelector(final ISelector pSelector) {
 		this.mSelector = pSelector;
+	}
+
+	@Override
+	public void newClient(InetSocketAddress pClient) {
+		this.loopQueueAndSend(pClient);
+	}
+
+	@Override
+	public void timeoutClient(InetSocketAddress pClient) {
+		
+	}
+
+	@Override
+	public void disconnectClient(InetSocketAddress pClient) {
 	}
 
 	// ===========================================================
@@ -95,7 +112,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 		return null;
 	}
 
-	protected IMessage reproduceMessage(byte[] pData, final InetAddress pAddress) {
+	protected IMessage reproduceMessage(byte[] pData, final InetSocketAddress pAddress) {
 		try {
 			final ByteArrayInputStream bInput = new ByteArrayInputStream(pData);
 			DataInputStream dis = new DataInputStream(bInput);
@@ -143,26 +160,59 @@ public class LogManager<M extends IMessage> implements ILogManager {
 		return null;
 	}
 
-	protected void sendMessage(final InetAddress pAddress, final IMessage pMessage) {
+	protected boolean sendMessage(final InetSocketAddress pAddress, final IMessage pMessage) {
+		log.debug("Sending messsage: {} to: {}", pMessage.getMessageFlag(), pAddress.toString());
 		final byte[] pData = this.produceBytes(pMessage);
 		if (pData != null) {
-			try {
-				this.mSelector.send(pAddress, pData);
-			} catch (IOException e) {
-				log.error("Could not send request to: {}", pAddress, e);
+			if (this.mSelector.containsAddress(pAddress.getAddress())) {
+				try {
+					this.mSelector.send(pAddress, pData);
+					return true;
+				} catch (IOException e) {
+					log.error("Could not send request to: {}", pAddress, e);
+					return false;
+				}
+			} else {
+				try {
+					this.mSelector.connectTo(pAddress);
+					this.queueMessage(pAddress, pMessage);
+					return true;
+				} catch (IOException e) {
+					log.error("Could not connect via selector, will not queue message: {}", pAddress, e);
+					return false;
+				}
 			}
 		} else {
 			log.error("Could not send message flag: {}. As message could not be streamed into bytes",
 					pMessage.getMessageFlag());
+			return false;
 		}
 	}
 
-	protected void sendErrorMessage(final InetAddress pAddress, final String pError, final int pSeq) {
+	protected void sendErrorMessage(final InetSocketAddress pAddress, final String pError, final int pSeq) {
 		MessageError message = (MessageError) this.getMessage(MessageFlag.ERROR.getNumber());
 		if (message != null) {
 			message.setSequence(pSeq);
 			message.setError(pError);
 			this.sendMessage(pAddress, message);
+		}
+	}
+
+	protected void queueMessage(final InetSocketAddress pAddress, final IMessage pMessage) {
+		ArrayList<IMessage> queue = this.mQueue.get(pAddress);
+		if (queue == null) {
+			queue = new ArrayList<IMessage>();
+			this.mQueue.put(pAddress, queue);
+		}
+		queue.add(pMessage);
+	}
+	
+	protected void loopQueueAndSend(final InetSocketAddress pAddress){
+		ArrayList<IMessage> queue = this.mQueue.get(pAddress);
+		if (queue != null) {
+			for (IMessage pMessage : queue) {
+				this.sendMessage(pAddress, pMessage);
+			}
 		}
 	}
 	// ===========================================================

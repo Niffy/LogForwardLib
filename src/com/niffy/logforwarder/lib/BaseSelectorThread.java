@@ -134,6 +134,38 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 		}
 	}
 
+	@Override
+	public boolean containsAddress(InetAddress pAddress) {
+		return this.mChannelMap.containsKey(pAddress);
+	}
+
+	@Override
+	public void send(InetSocketAddress pAddress, byte[] pData) {
+		synchronized (this.mPendingClosure) {
+			if (this.mPendingClosure.contains(pAddress.getAddress())) {
+				log.warn("Address: {} is pending closure", pAddress.getAddress().toString());
+			}
+		}
+		synchronized (this.mChannelMap) {
+			if (this.mChannelMap.containsKey(pAddress.getAddress())) {
+				Connection con = this.mChannelMap.get(pAddress.getAddress());
+				if (!con.mSocketChannel.isConnected()) {
+					log.error("Went to send a message to: {} but the channel is not connected", pAddress.getAddress()
+							.toString());
+				} else {
+					this.sendMessage(con, pData);
+				}
+			} else {
+				log.error("Went to send a message to: {} but no channel exists", pAddress.getAddress().toString());
+			}
+		}
+	}
+
+	@Override
+	public void connectTo(InetSocketAddress pAddress) throws IOException {
+		
+	}
+
 	// ===========================================================
 	// Methods
 	// ===========================================================
@@ -201,27 +233,6 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 			if (queue == null) {
 				queue = new ArrayList<ByteBuffer>();
 				this.mPendingData.put(pConnection.getAddress().getAddress(), queue);
-			}
-		}
-	}
-
-	@Override
-	public void send(InetAddress pAddress, byte[] pData) {
-		synchronized (this.mPendingClosure) {
-			if (this.mPendingClosure.contains(pAddress)) {
-				log.warn("Address: {} is pending closure", pAddress.toString());
-			}
-		}
-		synchronized (this.mChannelMap) {
-			if (this.mChannelMap.containsKey(pAddress)) {
-				Connection con = this.mChannelMap.get(pAddress);
-				if (!con.mSocketChannel.isConnected()) {
-					log.error("Went to send a message to: {} but the channel is not connected", pAddress.toString());
-				} else {
-					this.sendMessage(con, pData);
-				}
-			} else {
-				log.error("Went to send a message to: {} but no channel exists", pAddress.toString());
 			}
 		}
 	}

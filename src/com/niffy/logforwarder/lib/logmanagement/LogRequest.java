@@ -1,6 +1,6 @@
 package com.niffy.logforwarder.lib.logmanagement;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class LogRequest<T extends IMessage> {
 	// Fields
 	// ===========================================================
 	public int mClientRequest;
-	public InetAddress mAddress;
+	public InetSocketAddress mAddress;
 	public T mMessage;
 	public ILogOwner mOwner;
 
@@ -26,7 +26,7 @@ public class LogRequest<T extends IMessage> {
 	// Constructors
 	// ===========================================================
 
-	public LogRequest(final int pRequest, final InetAddress pAddress, final T pMessage, final ILogOwner pOwner) {
+	public LogRequest(final int pRequest, final InetSocketAddress pAddress, final T pMessage, final ILogOwner pOwner) {
 		this.mClientRequest = pRequest;
 		this.mAddress = pAddress;
 		this.mMessage = pMessage;
@@ -48,11 +48,11 @@ public class LogRequest<T extends IMessage> {
 		this.mClientRequest = pClientRequest;
 	}
 
-	public InetAddress getAddress() {
+	public InetSocketAddress getAddress() {
 		return mAddress;
 	}
 
-	public void setAddress(InetAddress pAddress) {
+	public void setAddress(InetSocketAddress pAddress) {
 		this.mAddress = pAddress;
 	}
 

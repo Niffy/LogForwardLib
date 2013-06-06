@@ -1,6 +1,6 @@
 package com.niffy.logforwarder.lib.logmanagement;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,7 +64,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	}
 
 	@Override
-	public void handle(InetAddress pAddress, byte[] pData) {
+	public void handle(InetSocketAddress pAddress, byte[] pData) {
 		IMessage message = this.reproduceMessage(pData, pAddress);
 		if (message != null) {
 			this.produceRequestResponse(pAddress, message);
@@ -80,7 +80,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	// ===========================================================
 	// Methods
 	// ===========================================================
-	protected void produceRequestResponse(final InetAddress pAddress, final IMessage pMessage) {
+	protected void produceRequestResponse(final InetSocketAddress pAddress, final IMessage pMessage) {
 		if (pMessage.getMessageFlag() == MessageFlag.DELETE_REQUEST.getNumber()) {
 			this.createDeleteTask(pAddress, (MessageDeleteRequest) pMessage);
 		} else if (pMessage.getMessageFlag() == MessageFlag.SEND_REQUEST.getNumber()) {
@@ -96,7 +96,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	 * @param pAddress
 	 * @param pMessage
 	 */
-	protected void createReadTask(final InetAddress pAddress, final MessageSendRequest pMessage) {
+	protected void createReadTask(final InetSocketAddress pAddress, final MessageSendRequest pMessage) {
 		final int pSeq = this.mSequence.getAndIncrement();
 		Runnable runnable = new TaskRead(pMessage.getLogFileNameAndPath());
 		CallbackInfo info = new CallbackInfo(pAddress, pSeq, pMessage.getSequence(), pMessage.getMessageFlag(),
@@ -112,7 +112,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	 * @param pAddress
 	 * @param pMessage
 	 */
-	protected void createDeleteTask(final InetAddress pAddress, final MessageDeleteRequest pMessage) {
+	protected void createDeleteTask(final InetSocketAddress pAddress, final MessageDeleteRequest pMessage) {
 		final int pSeq = this.mSequence.getAndIncrement();
 		Runnable runnable = new TaskDelete(pMessage.getLogFileNameAndPath());
 		CallbackInfo info = new CallbackInfo(pAddress, pSeq, pMessage.getSequence(), pMessage.getMessageFlag(),

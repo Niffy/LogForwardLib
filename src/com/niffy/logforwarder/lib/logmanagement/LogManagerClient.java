@@ -1,6 +1,6 @@
 package com.niffy.logforwarder.lib.logmanagement;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -19,7 +19,6 @@ public class LogManagerClient extends LogManager<IMessage> {
 	// Fields
 	// ===========================================================
 	protected HashMap<Integer, LogRequest<IMessage>> mRequests = new HashMap<Integer, LogRequest<IMessage>>();
-
 	// ===========================================================
 	// Constructors
 	// ===========================================================
@@ -36,7 +35,7 @@ public class LogManagerClient extends LogManager<IMessage> {
 	// Methods for/from SuperClass/Interfaces
 	// ===========================================================
 	@Override
-	public void handle(InetAddress pAddress, byte[] pData) {
+	public void handle(InetSocketAddress pAddress, byte[] pData) {
 		IMessage message = this.reproduceMessage(pData, pAddress);
 		if (message != null) {
 			this.updateOwner(message);
@@ -44,8 +43,8 @@ public class LogManagerClient extends LogManager<IMessage> {
 	}
 
 	@Override
-	public void addRequest(LogRequest<IMessage> pRequest) {
-		this.sendRequest(pRequest);
+	public boolean addRequest(LogRequest<IMessage> pRequest) {
+		return this.sendRequest(pRequest);
 	}
 
 	// ===========================================================
@@ -55,13 +54,12 @@ public class LogManagerClient extends LogManager<IMessage> {
 	// ===========================================================
 	// Methods
 	// ===========================================================
-
-	protected void sendRequest(LogRequest<IMessage> pRequest) {
+	protected boolean sendRequest(LogRequest<IMessage> pRequest) {
 		IMessage message = pRequest.getMessage();
 		final int pSeq = this.mSequence.getAndIncrement();
 		message.setSequence(pSeq);
 		this.mRequests.put(pSeq, pRequest);
-		this.sendMessage(pRequest.getAddress(), message);
+		return this.sendMessage(pRequest.getAddress(), message);
 	}
 
 	protected void updateOwner(final IMessage pMessage) {
@@ -70,6 +68,7 @@ public class LogManagerClient extends LogManager<IMessage> {
 			final LogRequest<IMessage> request = this.mRequests.get(pSeq);
 			final int pRequestID = request.getClientRequest();
 			request.getOwner().handleResponse(pRequestID, pMessage);
+			this.mRequests.remove(pSeq);
 		} else {
 			log.error("Could not serve response to log request owner Seq: {} Flag: {}", pSeq, pMessage.getMessageFlag());
 		}

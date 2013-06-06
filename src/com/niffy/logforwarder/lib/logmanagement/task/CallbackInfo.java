@@ -1,6 +1,6 @@
 package com.niffy.logforwarder.lib.logmanagement.task;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +19,13 @@ public class CallbackInfo {
 	protected final int mClientSeq;
 	protected final int mMessageFlag;
 	protected final Runnable mRunnable;
-	protected final InetAddress mAddress;
+	protected final InetSocketAddress mAddress;
 
 	// ===========================================================
 	// Constructors
 	// ===========================================================
 
-	public CallbackInfo(final InetAddress pAddress, final int pSeq, final int pClientSeq, final int pMessageFlag,
+	public CallbackInfo(final InetSocketAddress pAddress, final int pSeq, final int pClientSeq, final int pMessageFlag,
 			final Runnable pRunnable) {
 		this.mAddress = pAddress;
 		this.mSeq = pSeq;
@@ -57,7 +57,7 @@ public class CallbackInfo {
 		return mSeq;
 	}
 
-	public InetAddress getAddress() {
+	public InetSocketAddress getAddress() {
 		return this.mAddress;
 	}
 	// ===========================================================

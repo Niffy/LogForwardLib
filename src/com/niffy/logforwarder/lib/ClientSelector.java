@@ -143,6 +143,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 		pKey.interestOps(SelectionKey.OP_WRITE);
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(Data.IP, con.getAddress().getAddress().toString());
+		map.put(Data.IP_INETADDRESS, con.getAddress().getAddress());
 		this.sendToThread(Flag.CLIENT_CONNECTED.getNumber(), map);
 	}
 
@@ -249,7 +250,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 		byte[] dataIn = new byte[numRead];
 		System.arraycopy(buffer.array(), 0, dataIn, 0, numRead);
 		
-		this.mLogManager.handle(address.getAddress(), dataIn);
+		this.mLogManager.handle(address, dataIn);
 	}
 
 	@Override

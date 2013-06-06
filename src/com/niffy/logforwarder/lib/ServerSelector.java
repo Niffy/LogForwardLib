@@ -184,7 +184,7 @@ public class ServerSelector extends BaseSelectorThread {
 
 		byte[] dataIn = new byte[numRead];
 		System.arraycopy(buffer.array(), 0, dataIn, 0, numRead);
-		this.mLogManager.handle(address.getAddress(), dataIn);
+		this.mLogManager.handle(address, dataIn);
 	}
 
 	@Override
