@@ -157,19 +157,21 @@ public class ServerSelector extends BaseSelectorThread {
 		try {
 			numRead = socketChannel.read(buffer);
 		} catch (AsynchronousCloseException e) {
-			log.error("AsynchronousCloseException", e);
+			log.error("AsynchronousCloseException: {}", socketChannel.getRemoteAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
+			return;
 		} catch (NotYetConnectedException e) {
-			log.error("NotYetConnectedException", e);
+			log.error("NotYetConnectedException: {}", socketChannel.getRemoteAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
+			return;
 		} catch (ClosedChannelException e) {
-			log.error("ClosedChannelException", e);
+			log.error("ClosedChannelException: {}", socketChannel.getRemoteAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
 			synchronized (this.mChannelMap) {
 				this.mChannelMap.remove(address.getAddress());
-			}
+			}return;
 		} catch (IOException e) {
-			log.error("IOException", e);
+			log.error("IOException: {}", socketChannel.getRemoteAddress(), e);
 			// The remote forcibly closed the connection, cancel
 			// the selection key and close the channel.
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
