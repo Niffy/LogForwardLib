@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -209,10 +210,11 @@ public class LogManager<M extends IMessage> implements ILogManager {
 	
 	protected void loopQueueAndSend(final InetSocketAddress pAddress){
 		ArrayList<IMessage> queue = this.mQueue.get(pAddress);
-		if (queue != null) {
-			for (IMessage pMessage : queue) {
-				this.sendMessage(pAddress, pMessage);
-			}
+		Iterator<IMessage> it = queue.iterator();
+		while(it.hasNext()){
+			IMessage pMessage = it.next();
+			it.remove();
+			this.sendMessage(pAddress, pMessage);
 		}
 	}
 	// ===========================================================
