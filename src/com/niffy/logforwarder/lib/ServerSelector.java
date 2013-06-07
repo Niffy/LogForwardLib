@@ -85,7 +85,12 @@ public class ServerSelector extends BaseSelectorThread {
 							this.write(key);
 						}
 					} catch (IOException e) {
-						log.error("IOException on key operation", e);
+						Connection con = (Connection) key.attachment();
+						if (con != null) {
+							log.error("IOException on key operation: {}", con.getAddress(), e);
+						} else {
+							log.error("IOException on key operation", e);
+						}
 					}
 				}
 			} catch (Exception e) {

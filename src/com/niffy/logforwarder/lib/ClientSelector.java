@@ -99,7 +99,12 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 							this.write(key);
 						}
 					} catch (IOException e) {
-						log.error("IOException on key operation", e);
+						Connection con = (Connection) key.attachment();
+						if (con != null) {
+							log.error("IOException on key operation: {}", con.getAddress(), e);
+						} else {
+							log.error("IOException on key operation", e);
+						}
 					}
 				}
 			} catch (Exception e) {
@@ -251,7 +256,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 
 		byte[] dataIn = new byte[numRead];
 		System.arraycopy(buffer.array(), 0, dataIn, 0, numRead);
-		
+
 		this.mLogManager.handle(address, dataIn);
 	}
 
@@ -337,7 +342,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 	protected SocketChannel initiateConnection(final InetSocketAddress pAddress) throws IOException {
 		log.debug("InitiateConnection: {}", pAddress);
 		synchronized (this.mChannelMap) {
-			if(this.mChannelMap.containsKey(pAddress.getAddress())){
+			if (this.mChannelMap.containsKey(pAddress.getAddress())) {
 				log.warn("Went to connect to: {} but already in the channel map.", pAddress);
 				return null;
 			}
