@@ -132,15 +132,15 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 		try {
 			socketChannel.finishConnect();
 		} catch (NoConnectionPendingException e) {
-			log.error("NoConnectionPendingException{}", socketChannel.getRemoteAddress(), e);
+			log.error("NoConnectionPendingException{}", con.getAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
 			return;
 		} catch (ClosedChannelException e) {
-			log.error("ClosedChannelException{}", socketChannel.getRemoteAddress(), e);
+			log.error("ClosedChannelException{}", con.getAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
 			return;
 		} catch (IOException e) {
-			log.error("IOException: {}", socketChannel.getRemoteAddress(), e);
+			log.error("IOException: {}", con.getAddress(), e);
 			this.handleConnectionFailure(pKey, socketChannel, address.getAddress());
 			return;
 		}
