@@ -35,6 +35,10 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	 * Key = Our Seq. Value = {@link CallbackInfo}
 	 */
 	protected HashMap<Integer, CallbackInfo> mRunnables = new HashMap<Integer, CallbackInfo>();
+	/**
+	 * Key = Client Seq Value = Our Seq
+	 */
+	protected HashMap<Integer, Integer> mCrosRef = new HashMap<Integer, Integer>();
 	protected ExecutorService mService;
 
 	// ===========================================================
@@ -107,6 +111,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 		CallbackInfo info = new CallbackInfo(pAddress, pSeq, pMessage.getSequence(), pMessage.getMessageFlag(),
 				runnable);
 		this.mRunnables.put(pSeq, info);
+		this.mCrosRef.put(pMessage.getSequence(), pSeq);
 		CallbackTask task = new CallbackTask(runnable, this, pSeq);
 		this.mService.execute(task);
 	}
@@ -123,6 +128,7 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 		CallbackInfo info = new CallbackInfo(pAddress, pSeq, pMessage.getSequence(), pMessage.getMessageFlag(),
 				runnable);
 		this.mRunnables.put(pSeq, info);
+		this.mCrosRef.put(pMessage.getSequence(), pSeq);
 		CallbackTask task = new CallbackTask(runnable, this, pSeq);
 		this.mService.execute(task);
 	}
@@ -164,15 +170,28 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 		pMessage.setSequence(pCallbackInfo.getClientSeq());
 		TaskDelete runnable = (TaskDelete) pCallbackInfo.getRunnable();
 		pMessage.setDeleted(runnable.getTaskSuccesful());
-		this.mRunnables.remove(pCallbackInfo.getClientSeq());
+		if(this.mCrosRef.containsKey(pMessage.getSequence())){
+			int ourSeq = this.mCrosRef.get(pMessage.getSequence());
+			this.mRunnables.remove(ourSeq);
+			this.mCrosRef.remove(pMessage.getSequence());
+		}else{
+			log.warn("Could not remove runnable and our reference CSeq: {}", pMessage.getSequence());
+		}
 		this.sendMessage(pCallbackInfo.getAddress(), pMessage);
 	}
 
 	protected void sendRemainingData(final InetSocketAddress pAddress, final IMessage pMessage) {
 		CallbackInfo pCallbackInfo;
-		if (this.mRunnables.containsKey(pMessage.getSequence())) {
-			pCallbackInfo = this.mRunnables.get(pMessage.getSequence());
-		} else {
+		if(this.mCrosRef.containsKey(pMessage.getSequence())){
+			int ourSeq = this.mCrosRef.get(pMessage.getSequence());
+			if (this.mRunnables.containsKey(ourSeq)) {
+				pCallbackInfo = this.mRunnables.get(ourSeq);
+			} else {
+				log.warn("Could not find runable for our seq: {}", ourSeq);
+				return;
+			}
+		}else{
+			log.warn("Could not get cross refed sequence to clients seq: {}", pMessage.getSequence());
 			return;
 		}
 		MessageSendDataFile dataMessage = (MessageSendDataFile) this.getMessage(MessageFlag.SEND_DATA_FILE.getNumber());
@@ -180,7 +199,13 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 		TaskRead runnable = (TaskRead) pCallbackInfo.getRunnable();
 		dataMessage.setFileSize(runnable.getFileSize());
 		dataMessage.setData(runnable.getData());
-		this.mRunnables.remove(pCallbackInfo.getClientSeq());
+		if(this.mCrosRef.containsKey(pMessage.getSequence())){
+			int ourSeq = this.mCrosRef.get(pMessage.getSequence());
+			this.mRunnables.remove(ourSeq);
+			this.mCrosRef.remove(pMessage.getSequence());
+		}else{
+			log.warn("Could not remove runnable and our reference CSeq: {}", pMessage.getSequence());
+		}
 		this.sendMessage(pCallbackInfo.getAddress(), dataMessage);
 	}
 	// ===========================================================
