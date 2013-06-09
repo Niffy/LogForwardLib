@@ -18,8 +18,9 @@ import com.niffy.logforwarder.lib.messages.IMessage;
 import com.niffy.logforwarder.lib.messages.MessageDeleteRequest;
 import com.niffy.logforwarder.lib.messages.MessageDeleteResponse;
 import com.niffy.logforwarder.lib.messages.MessageFlag;
+import com.niffy.logforwarder.lib.messages.MessageSendDataFile;
 import com.niffy.logforwarder.lib.messages.MessageSendRequest;
-import com.niffy.logforwarder.lib.messages.MessageSendResponse;
+import com.niffy.logforwarder.lib.messages.MessageSendSizeResponse;
 
 public class LogManagerServer extends LogManager<IMessage> implements ICallback {
 	// ===========================================================
@@ -67,6 +68,10 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	public void handle(InetSocketAddress pAddress, byte[] pData) {
 		IMessage message = this.reproduceMessage(pData, pAddress);
 		if (message != null) {
+			if (message.getMessageFlag() == MessageFlag.SEND_SIZE_ACK.getNumber()) {
+				this.sendRemainingData(pAddress, message);
+				return;
+			}
 			this.produceRequestResponse(pAddress, message);
 		} else {
 			log.error("Could not reproduce message");
@@ -139,11 +144,11 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 	 * @param pMessage
 	 */
 	protected void createReadResponse(final CallbackInfo pCallbackInfo) {
-		MessageSendResponse pMessage = (MessageSendResponse) this.getMessage(MessageFlag.SEND_RESPONSE.getNumber());
+		MessageSendSizeResponse pMessage = (MessageSendSizeResponse) this.getMessage(MessageFlag.SEND_SIZE_RESPONSE
+				.getNumber());
 		pMessage.setSequence(pCallbackInfo.getClientSeq());
 		TaskRead runnable = (TaskRead) pCallbackInfo.getRunnable();
 		pMessage.setFileSize(runnable.getFileSize());
-		pMessage.setLogFileNameAndPath(runnable.getData());
 		this.sendMessage(pCallbackInfo.getAddress(), pMessage);
 	}
 
@@ -159,9 +164,25 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 		pMessage.setSequence(pCallbackInfo.getClientSeq());
 		TaskDelete runnable = (TaskDelete) pCallbackInfo.getRunnable();
 		pMessage.setDeleted(runnable.getTaskSuccesful());
+		this.mRunnables.remove(pCallbackInfo.getClientSeq());
 		this.sendMessage(pCallbackInfo.getAddress(), pMessage);
 	}
 
+	protected void sendRemainingData(final InetSocketAddress pAddress, final IMessage pMessage) {
+		CallbackInfo pCallbackInfo;
+		if (this.mRunnables.containsKey(pMessage.getSequence())) {
+			pCallbackInfo = this.mRunnables.get(pMessage.getSequence());
+		} else {
+			return;
+		}
+		MessageSendDataFile dataMessage = (MessageSendDataFile) this.getMessage(MessageFlag.SEND_DATA_FILE.getNumber());
+		dataMessage.setSequence(pCallbackInfo.getClientSeq());
+		TaskRead runnable = (TaskRead) pCallbackInfo.getRunnable();
+		dataMessage.setFileSize(runnable.getFileSize());
+		dataMessage.setData(runnable.getData());
+		this.mRunnables.remove(pCallbackInfo.getClientSeq());
+		this.sendMessage(pCallbackInfo.getAddress(), dataMessage);
+	}
 	// ===========================================================
 	// Inner and Anonymous Classes
 	// ===========================================================

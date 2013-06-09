@@ -136,7 +136,9 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 
 	@Override
 	public boolean containsAddress(InetAddress pAddress) {
-		return this.mChannelMap.containsKey(pAddress);
+		synchronized (this.mChannelMap) {
+			return this.mChannelMap.containsKey(pAddress);
+		}
 	}
 
 	@Override

@@ -133,7 +133,9 @@ public class ServerSelector extends BaseSelectorThread {
 		socketChannel.register(this.mSelector, SelectionKey.OP_READ);
 		Connection con = new Connection((InetSocketAddress) socket.getRemoteSocketAddress(), socketChannel,
 				this.mBufferCapacity);
-		this.mChannelMap.put(con.getAddress().getAddress(), con);
+		synchronized (this.mChannelMap) {
+			this.mChannelMap.put(con.getAddress().getAddress(), con);
+		}
 		pKey.attach(con);
 
 	}
@@ -211,12 +213,12 @@ public class ServerSelector extends BaseSelectorThread {
 
 		synchronized (this.mPendingData) {
 			ArrayList<ByteBuffer> queue = this.mPendingData.get(con.getAddress().getAddress());
-
 			// Write until there's not more data ...
 			while (!queue.isEmpty()) {
 				ByteBuffer buf = (ByteBuffer) queue.get(0);
 				try {
-					socketChannel.write(buf);
+					int written = socketChannel.write(buf);
+					log.debug("Wrote: {}", written);
 				} catch (ClosedChannelException e) {
 					log.error("ClosedChannelException", e);
 				} catch (IOException e) {

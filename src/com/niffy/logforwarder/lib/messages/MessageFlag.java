@@ -8,8 +8,10 @@ import com.niffy.logforwarder.lib.GenericClassCastException;
 public enum MessageFlag {
 	SEND_REQUEST(0),
 	DELETE_REQUEST(1),
-	SEND_RESPONSE(2),
-	DELETE_RESPONSE(3),
+	SEND_SIZE_RESPONSE(2),
+	SEND_SIZE_ACK(3),
+	SEND_DATA_FILE(4),
+	DELETE_RESPONSE(5),
 	ERROR(999);
 	
 

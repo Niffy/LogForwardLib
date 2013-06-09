@@ -23,7 +23,9 @@ import com.niffy.logforwarder.lib.messages.MessageDeleteResponse;
 import com.niffy.logforwarder.lib.messages.MessageError;
 import com.niffy.logforwarder.lib.messages.MessageFlag;
 import com.niffy.logforwarder.lib.messages.MessageSendRequest;
-import com.niffy.logforwarder.lib.messages.MessageSendResponse;
+import com.niffy.logforwarder.lib.messages.MessageSendDataFile;
+import com.niffy.logforwarder.lib.messages.MessageSendSizeAck;
+import com.niffy.logforwarder.lib.messages.MessageSendSizeResponse;
 
 public class LogManager<M extends IMessage> implements ILogManager {
 	// ===========================================================
@@ -77,7 +79,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 
 	@Override
 	public void timeoutClient(InetSocketAddress pClient) {
-		
+
 	}
 
 	@Override
@@ -98,8 +100,12 @@ public class LogManager<M extends IMessage> implements ILogManager {
 			return new MessageDeleteResponse(this.mVersion, pFlag);
 		} else if (pFlag == MessageFlag.SEND_REQUEST.getNumber()) {
 			return new MessageSendRequest(this.mVersion, pFlag);
-		} else if (pFlag == MessageFlag.SEND_RESPONSE.getNumber()) {
-			return new MessageSendResponse(this.mVersion, pFlag);
+		} else if (pFlag == MessageFlag.SEND_DATA_FILE.getNumber()) {
+			return new MessageSendDataFile(this.mVersion, pFlag);
+		} else if (pFlag == MessageFlag.SEND_SIZE_RESPONSE.getNumber()) {
+			return new MessageSendSizeResponse(this.mVersion, pFlag);
+		} else if (pFlag == MessageFlag.SEND_SIZE_ACK.getNumber()) {
+			return new MessageSendSizeAck(this.mVersion, pFlag);
 		} else if (pFlag == MessageFlag.ERROR.getNumber()) {
 			return new MessageError(this.mVersion, pFlag);
 		}
@@ -114,6 +120,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 	}
 
 	protected IMessage reproduceMessage(byte[] pData, final InetSocketAddress pAddress) {
+		log.debug("Reproduce message from: {} size: {}", pAddress, pData.length);
 		try {
 			final ByteArrayInputStream bInput = new ByteArrayInputStream(pData);
 			DataInputStream dis = new DataInputStream(bInput);
@@ -126,7 +133,10 @@ public class LogManager<M extends IMessage> implements ILogManager {
 			if (version != this.mVersion) {
 				final String pMessage = "Version numbers do not match. Ours: " + this.mVersion + " Clients: " + version;
 				log.error(pMessage);
-				this.sendErrorMessage(pAddress, pMessage, sequence);
+				/*
+				 *  should the client care about sending a message back to the server?
+				 *  this.sendErrorMessage(pAddress, pMessage, sequence);
+				 */
 				return null;
 			}
 			IMessage message = this.getMessage(flag);
@@ -153,6 +163,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 			dOutput.flush();
 			bOutput.flush();
 			byte[] pData = bOutput.toByteArray();
+			log.debug("produced bytes to send: {}", pData.length);
 			return pData;
 		} catch (IOException e) {
 			log.error("Could not stream message into bytes Flag: {} Seq: {}", pMessage.getMessageFlag(),
@@ -162,7 +173,9 @@ public class LogManager<M extends IMessage> implements ILogManager {
 	}
 
 	protected boolean sendMessage(final InetSocketAddress pAddress, final IMessage pMessage) {
-		log.debug("Sending messsage: {} to: {}", pMessage.getMessageFlag(), pAddress.toString());
+		final Object[] pArray = { pMessage.getVersion(), pMessage.getMessageFlag(), pMessage.getSequence(),
+				pAddress.toString() };
+		log.debug("Sending messsage: V:{} F:{} S:{} to: {}", pArray);
 		final byte[] pData = this.produceBytes(pMessage);
 		if (pData != null) {
 			if (this.mSelector.containsAddress(pAddress.getAddress())) {
@@ -174,6 +187,7 @@ public class LogManager<M extends IMessage> implements ILogManager {
 					return false;
 				}
 			} else {
+				log.info("Not connected to: {} will connect and queue.", pAddress.getAddress());
 				try {
 					this.mSelector.connectTo(pAddress);
 					this.queueMessage(pAddress, pMessage);
@@ -207,11 +221,12 @@ public class LogManager<M extends IMessage> implements ILogManager {
 		}
 		queue.add(pMessage);
 	}
-	
-	protected void loopQueueAndSend(final InetSocketAddress pAddress){
+
+	protected void loopQueueAndSend(final InetSocketAddress pAddress) {
+		log.debug("Will loop and queue: {}", pAddress.getAddress());
 		ArrayList<IMessage> queue = this.mQueue.get(pAddress);
 		Iterator<IMessage> it = queue.iterator();
-		while(it.hasNext()){
+		while (it.hasNext()) {
 			IMessage pMessage = it.next();
 			it.remove();
 			this.sendMessage(pAddress, pMessage);

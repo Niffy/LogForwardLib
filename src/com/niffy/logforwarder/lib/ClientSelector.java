@@ -150,7 +150,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 		pKey.interestOps(SelectionKey.OP_WRITE);
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(Data.IP, con.getAddress().getAddress().toString());
-		map.put(Data.IP_INETADDRESS, con.getAddress().getAddress());
+		map.put(Data.IP_INETADDRESS, con.getAddress());
 		this.sendToThread(Flag.CLIENT_CONNECTED.getNumber(), map);
 	}
 
@@ -222,10 +222,11 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 			pKey.attach(con);
 			buffer = con.getBuffer();
 		}
+		log.debug("Read: {} Cap: {}", address.getAddress(), buffer.capacity());
 		buffer.clear();
 
 		// Attempt to read off the channel
-		int numRead = -2;
+		int numRead = 0;
 		try {
 			numRead = socketChannel.read(buffer);
 		} catch (AsynchronousCloseException e) {
