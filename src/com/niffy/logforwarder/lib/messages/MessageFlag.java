@@ -12,6 +12,7 @@ public enum MessageFlag {
 	SEND_SIZE_ACK(3),
 	SEND_DATA_FILE(4),
 	DELETE_RESPONSE(5),
+	SHUT_DOWN_SERVICE(888),
 	ERROR(999);
 	
 

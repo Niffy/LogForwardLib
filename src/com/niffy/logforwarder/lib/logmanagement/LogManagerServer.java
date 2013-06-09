@@ -75,6 +75,9 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 			if (message.getMessageFlag() == MessageFlag.SEND_SIZE_ACK.getNumber()) {
 				this.sendRemainingData(pAddress, message);
 				return;
+			}else if (message.getMessageFlag() == MessageFlag.SHUT_DOWN_SERVICE.getNumber()){
+				this.shutdownService(pAddress);
+				return;
 			}
 			this.produceRequestResponse(pAddress, message);
 		} else {
@@ -207,6 +210,10 @@ public class LogManagerServer extends LogManager<IMessage> implements ICallback 
 			log.warn("Could not remove runnable and our reference CSeq: {}", pMessage.getSequence());
 		}
 		this.sendMessage(pCallbackInfo.getAddress(), dataMessage);
+	}
+	
+	public void shutdownService(final InetSocketAddress pAddress){
+		log.info("Client: {} wants the service to shut down", pAddress.getAddress());
 	}
 	// ===========================================================
 	// Inner and Anonymous Classes

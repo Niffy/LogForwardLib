@@ -26,6 +26,7 @@ import com.niffy.logforwarder.lib.messages.MessageSendRequest;
 import com.niffy.logforwarder.lib.messages.MessageSendDataFile;
 import com.niffy.logforwarder.lib.messages.MessageSendSizeAck;
 import com.niffy.logforwarder.lib.messages.MessageSendSizeResponse;
+import com.niffy.logforwarder.lib.messages.MessageShutDownService;
 
 public class LogManager<M extends IMessage> implements ILogManager {
 	// ===========================================================
@@ -108,6 +109,8 @@ public class LogManager<M extends IMessage> implements ILogManager {
 			return new MessageSendSizeAck(this.mVersion, pFlag);
 		} else if (pFlag == MessageFlag.ERROR.getNumber()) {
 			return new MessageError(this.mVersion, pFlag);
+		}else if(pFlag == MessageFlag.SHUT_DOWN_SERVICE.getNumber()){
+			return new MessageShutDownService(this.mVersion, pFlag);
 		}
 		try {
 			Flag flag = Flag.get(pFlag);
