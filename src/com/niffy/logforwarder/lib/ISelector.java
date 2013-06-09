@@ -13,4 +13,6 @@ public interface ISelector {
 	public void send(final InetSocketAddress pAddress, final byte[] pData) throws IOException;
 
 	public boolean containsAddress(final InetAddress pAddress);
+	
+	public void shutdown();
 }

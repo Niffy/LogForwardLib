@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 	 */
 	protected ArrayList<InetAddress> mPendingClosure = new ArrayList<InetAddress>();
 	protected ILogManager mLogManager;
-
+	protected AtomicBoolean mRun = new AtomicBoolean(true);
 	// ===========================================================
 	// Constructors
 	// ===========================================================
@@ -90,7 +91,7 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 	@Override
 	public void run() {
 		log.debug("Running TCP Selector Thread");
-		while (true) {
+		while (this.mRun.get()) {
 			try {
 				// Process any pending changes
 				synchronized (this.mPendingChanges) {
@@ -261,6 +262,15 @@ public abstract class BaseSelectorThread extends Thread implements ISelector {
 
 	}
 
+	@Override
+	public void shutdown(){
+		try {
+			this.mRun.set(false);
+			this.mSelector.close();
+		} catch (IOException e) {
+			log.error("Could not close selector.", e);
+		}
+	}
 	// ===========================================================
 	// Inner and Anonymous Classes
 	// ===========================================================

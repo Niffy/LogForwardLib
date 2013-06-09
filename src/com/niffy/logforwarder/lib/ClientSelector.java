@@ -56,7 +56,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 	@Override
 	public void run() {
 		log.debug("Running TCP Client Selector Thread");
-		while (true) {
+		while (this.mRun.get()) {
 			try {
 				synchronized (this.mPendingRequests) {
 					Iterator<LogRequest<IMessage>> changes = this.mPendingRequests.iterator();
@@ -109,6 +109,7 @@ public class ClientSelector extends BaseSelectorThread implements IClientSelecto
 				}
 			} catch (Exception e) {
 				log.error("Exception in main loop", e);
+				return;
 			}
 		}
 	}

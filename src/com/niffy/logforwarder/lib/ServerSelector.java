@@ -50,7 +50,7 @@ public class ServerSelector extends BaseSelectorThread {
 	@Override
 	public void run() {
 		log.debug("Running TCP Selector Thread");
-		while (true) {
+		while (this.mRun.get()) {
 			try {
 				// Process any pending changes
 				synchronized (this.mPendingChanges) {
@@ -95,6 +95,7 @@ public class ServerSelector extends BaseSelectorThread {
 				}
 			} catch (Exception e) {
 				log.error("Exception in main loop", e);
+				return;
 			}
 		}
 	}
@@ -106,10 +107,10 @@ public class ServerSelector extends BaseSelectorThread {
 		// Create a new non-blocking server socket channel
 		this.mTCPChannel = ServerSocketChannel.open();
 		this.mTCPChannel.configureBlocking(false);
-
+		this.mTCPChannel.socket().setReuseAddress(true);
 		// Bind the server socket to the specified address and port
 		this.mTCPChannel.socket().bind(this.mAddress);
-
+		
 		// Register the server socket channel, indicating an interest in
 		// accepting new connections
 		this.mTCPChannel.register(found, SelectionKey.OP_ACCEPT);
@@ -275,6 +276,17 @@ public class ServerSelector extends BaseSelectorThread {
 		}
 	}
 
+	@Override
+	public void shutdown(){
+		try {
+			this.mRun.set(false);
+			this.mTCPChannel.socket().close();
+			this.mSelector.close();
+		} catch (IOException e) {
+			log.error("Could not close selector.", e);
+		}
+	}
+	
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
